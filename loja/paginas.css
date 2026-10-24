@@ -1,0 +1,22 @@
+/* Estilo das páginas de privacidade, suporte e termos do Pulp Pot (mesmas cores e fontes do jogo) */
+@font-face{font-family:"Baloo 2";src:url(fontes/Baloo2.woff2) format("woff2");font-weight:400 800;font-display:swap}
+@font-face{font-family:"Nunito";src:url(fontes/Nunito.woff2) format("woff2");font-weight:200 1000;font-display:swap}
+:root{--bg:#F7F2E7;--card:#FFFFFF;--ink:#4A3A35;--muted:#9A8780;--line:#ECE3D6;--dark:#3B2C28;--link:#1E6FBF}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Nunito",system-ui,sans-serif;padding:24px 16px 48px}
+main{max-width:680px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px 24px}
+header{display:flex;align-items:center;gap:14px}
+header img{width:64px;height:64px;flex:0 0 auto}
+h1{font:800 28px/1.1 "Baloo 2",sans-serif;color:var(--dark);margin:0}
+header small{display:block;color:var(--muted);font-weight:700;font-size:14px;margin-top:2px}
+h2{font:800 19px/1.25 "Baloo 2",sans-serif;color:var(--dark);margin:26px 0 6px}
+p,ul{margin:0 0 10px}
+ul{padding-left:20px}
+li{margin-bottom:4px}
+a{color:var(--link);font-weight:700}
+.data{color:var(--muted);font-size:14px;margin:14px 0 0}
+.resumo{background:var(--bg);border-radius:16px;padding:14px 16px;font-weight:700;margin:16px 0 0}
+.botao{display:inline-block;background:var(--dark);color:#FFF6E8;text-decoration:none;padding:12px 22px;border-radius:999px;margin:6px 0 8px}
+nav{max-width:680px;margin:18px auto 0;display:flex;gap:20px;justify-content:center;flex-wrap:wrap;font-size:14px}
+nav a{color:var(--muted)}
+nav a[aria-current="page"]{color:var(--dark);text-decoration:none}
