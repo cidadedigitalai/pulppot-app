@@ -1,0 +1,86 @@
+# Compila o Pulp Pot num Mac da nuvem e envia para a App Store Connect (TestFlight).
+# Rodar: aba Actions > "iOS (TestFlight)" > Run workflow   (ou: gh workflow run ios.yml -f testflight=false)
+# Segredos do repositório: APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (conteúdo do AuthKey_XXXX.p8)
+name: iOS (TestFlight)
+on:
+  workflow_dispatch:
+    inputs:
+      testflight:
+        description: Enviar para o TestFlight (desmarcado = só confere se compila, sem conta Apple)
+        type: boolean
+        default: true
+
+jobs:
+  testflight:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode mais novo da máquina (a Apple exige o SDK atual)
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+          xcodebuild -version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Jogo para dentro do app
+        run: npm ci && npx cap sync ios
+
+      - name: Só conferir se compila (sem assinatura)
+        if: ${{ !inputs.testflight }}
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build
+          APP=build/Build/Products/Release-iphonesimulator/App.app
+          test -f "$APP/PrivacyInfo.xcprivacy" && echo "Manifesto de privacidade dentro do app: ok"
+          test -f "$APP/public/index.html" && test -f "$APP/public/matter.min.js" && echo "Jogo dentro do app: ok"
+
+      - name: Chave da App Store Connect
+        if: ${{ inputs.testflight }}
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          test -n "$ASC_KEY_P8" || { echo "::error::Falta o segredo ASC_KEY_P8"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/chave"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/chave/AuthKey_$ASC_KEY_ID.p8"
+          echo "ASC_KEY_PATH=$RUNNER_TEMP/chave/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
+
+      # Arquiva SEM assinar: a assinatura automática de desenvolvimento exige iPhone cadastrado na conta.
+      # Quem assina é a exportação, já com certificado e perfil de distribuição (App Store não precisa de aparelho).
+      - name: Arquivar (sem assinatura)
+        if: ${{ inputs.testflight }}
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            archive
+
+      - name: Assinar para distribuição e enviar para a App Store Connect
+        if: ${{ inputs.testflight }}
+        run: |
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "Enviado: versão $(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleShortVersionString' "$RUNNER_TEMP/App.xcarchive/Info.plist") build ${{ github.run_number }}"

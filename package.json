@@ -7,5 +7,13 @@
     "test": "node --test",
     "jogo": "scp -r www/* loja/*.html loja/paginas.css loja/fruta.svg jogos@134.209.45.236:/srv/jogos/public/pulppot/",
     "sync": "cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
   }
 }

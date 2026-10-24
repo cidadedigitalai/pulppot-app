@@ -1,0 +1,11 @@
+{
+  "appId": "br.com.convivetecnologia.pulppot",
+  "appName": "Pulp Pot",
+  "webDir": "www",
+  "backgroundColor": "#F7F2E7",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#F7F2E7",
+    "scrollEnabled": false
+  }
+}
