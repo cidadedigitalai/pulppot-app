@@ -1,0 +1,8 @@
+node_modules/
+.superpowers/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
+*.p8
+.DS_Store
+_teste*.html
