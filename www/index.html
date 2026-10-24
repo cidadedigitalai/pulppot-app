@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F7F2E7">
 <title>Pulp Pot</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%229%22 r=%227%22 fill=%22%23F57C00%22/%3E%3C/svg%3E">
 <style>
 @font-face{font-family:"Baloo 2";src:url(fontes/Baloo2.woff2) format("woff2");font-weight:400 800;font-display:swap}
 @font-face{font-family:"Nunito";src:url(fontes/Nunito.woff2) format("woff2");font-weight:200 1000;font-display:swap}
@@ -72,6 +73,37 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .fim canvas{width:44px;height:44px}
 .fim .ok{color:var(--ok);font-weight:800}
 .fim .btn{margin-top:6px;padding:14px 30px;font-size:16px}
+.row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.opts{display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer}
+.opts input{width:18px;height:18px;accent-color:var(--dark)}
+.links{display:flex;flex-wrap:wrap;gap:2px 18px}
+.links a,.links button{border:0;background:none;padding:6px 0;color:#1E6FBF;font:800 14px var(--f-body);text-decoration:underline;cursor:pointer}
+.sub{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:6px!important}
+.miudo{font-size:13.5px;line-height:1.4}
+.modal a{color:#1E6FBF;font-weight:800}
+.miudo a{white-space:nowrap}
+/* Pomar: trilha das 10 árvores com as araras visitantes, e o álbum */
+.trilha{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.arv{position:relative;height:64px;display:flex;align-items:flex-end;justify-content:center}
+.arv>svg{width:46px;height:46px}
+.arv .num{position:absolute;left:2px;bottom:0;font-size:10px;font-weight:800;color:var(--muted)}
+.visita{position:absolute;top:-4px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;width:36px}
+.visita img{width:36px;height:36px;object-fit:contain}
+.visita.grupo{width:52px;top:-10px}
+.visita.grupo img{width:26px;height:26px}
+.completo{align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#E7F5E2;color:var(--ok)}
+.album{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.album button{border:0;background:var(--bg);border-radius:14px;padding:3px;cursor:pointer;aspect-ratio:1}
+.album button[disabled]{cursor:default}
+.album button[aria-pressed="true"]{box-shadow:0 0 0 3px var(--sun)}
+.album canvas{width:100%;height:100%;display:block}
+.detalhe{min-height:3.8em;font-size:14px;line-height:1.35}
+.detalhe b{display:block;font:800 17px var(--f-display);color:var(--dark)}
+/* Tutorial animado */
+.tut{align-items:center;text-align:center}
+.tut canvas{width:240px;height:280px;max-width:100%}
+.tut-txt{font-weight:800;min-height:2.8em;display:flex;align-items:center;justify-content:center}
+.tut .row{align-self:stretch;justify-content:center}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -201,13 +233,110 @@ function soltar() {
 }
 function fimDePartida() {
   acabou = true; try { localStorage.removeItem('pulppot-partida') } catch (e) {}
-  Som.fim(); tremer('erro');
+  Som.fim(); tremer('erro'); abrirFim();
+}
+function abrirFim() { // "Jogar de novo" recomeça direto, sem tela no meio
   const T = tx();
   abrir(`<h3>${T.gameOver}</h3><p class="grande">${T.points(pts)}</p><p class="rot">${T.best} ${rec}</p>
     <p class="linha"><canvas id="fimFruta" width="88" height="88"></canvas>${T.biggest(nomes()[maior])}</p>
     <p class="${metaFeita ? 'ok' : ''}">${metaFeita ? T.goalDone : T.goalPending}: ${T.goal(meta, nomes())}</p>
     <button class="btn primary" id="denovo">${T.playAgain}</button>`, true);
   $('modal').classList.add('fim'); Desenho.miniatura($('fimFruta'), maior); $('denovo').onclick = novaPartida; $('denovo').focus();
+}
+
+/* ---------- pomar, álbum e ajustes ---------- */
+const VISITAS = [['azul', 2], ['caninde', 4], ['vermelha', 6], ['lear', 8]]; // cada arara pousa na sua árvore; com 10, as quatro juntas na última
+function abrirPomar() {
+  const T = tx(), quem = n => arvores >= 10 ? (n === 10 ? VISITAS.map(v => v[0]) : []) : VISITAS.filter(([, m]) => m === n && arvores >= m).map(v => v[0]);
+  const trilha = Array.from({length: 10}, (_, i) => { const q = quem(i + 1);
+    return `<div class="arv">${q.length ? `<span class="visita${q.length > 1 ? ' grupo' : ''}">${q.map(c => `<img src="arara-${c}.webp" alt="" draggable="false">`).join('')}</span>` : ''}${Desenho.arvoreSVG(i < arvores)}<span class="num">${i + 1}</span></div>` }).join('');
+  abrir(`<h3>${T.orchard} <span class="rot">${Math.min(arvores, 10)}/10</span></h3>${arvores >= 10 ? `<span class="completo">${T.orchardComplete}</span>` : ''}
+    <div class="trilha">${trilha}</div>
+    ${arvores >= 2 ? `<p class="links"><a href="https://apps.apple.com/app/id6826639497" target="_blank" rel="noopener">${T.visitorLink}</a></p>` : ''}
+    <p class="sub">${T.album}</p>
+    <div class="album" id="album">${F.map((f, k) => `<button data-k="${k}" ${album.includes(k) ? `aria-label="${nomes()[k]}"` : `disabled aria-label="${T.locked}"`}><canvas width="96" height="96"></canvas></button>`).join('')}</div>
+    <p class="detalhe" id="detalhe">${T.albumHint}</p>
+    <div class="row"><button class="btn primary" id="mFechar">${T.close}</button></div>`);
+  $('album').querySelectorAll('button').forEach(b => Desenho.miniatura(b.firstChild, +b.dataset.k, b.disabled));
+  $('album').onclick = e => { const b = e.target.closest('button'); if (!b || b.disabled) return; const k = +b.dataset.k;
+    $('album').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    $('detalhe').innerHTML = `<b>${nomes()[k]}</b>${Textos.CURIOSIDADES[LANG][k]}` };
+  $('mFechar').onclick = fechar;
+}
+function abrirAjustes() {
+  const T = tx(), base = 'https://pulppot.convivetecnologia.com.br/';
+  abrir(`<h3>${T.settings}</h3>
+    <label class="opts"><input type="checkbox" id="oSom"${Som.efeitos ? ' checked' : ''}> ${T.sfx}</label>
+    <label class="opts"><input type="checkbox" id="oMusica"${Som.musica ? ' checked' : ''}> ${T.music}</label>
+    <div class="opts">${T.language}<div class="seg" id="oIdioma"><button data-lang="en" aria-pressed="${LANG === 'en'}">EN</button><button data-lang="pt" aria-pressed="${LANG === 'pt'}">PT</button></div></div>
+    <p class="links"><button type="button" id="mTut">${T.watchTutorial}</button></p>
+    <p class="sub">${T.privacy}</p>
+    <p class="miudo">${T.privP1}</p><p class="miudo">${T.privP2}</p>
+    <p class="miudo">${T.privP3} <a href="https://wa.me/5543996622117" target="_blank" rel="noopener">${T.fone}</a></p>
+    <p class="links">${T.pages.map(([arq, nome]) => `<a href="${base}${arq}" target="_blank" rel="noopener">${nome}</a>`).join('')}</p>
+    <div class="row"><button class="btn primary" id="mFechar">${T.close}</button></div>`);
+  $('oSom').onchange = e => { Som.efeitos = e.target.checked; store.set('pulppot-som', Som.efeitos) };
+  $('oMusica').onchange = e => { Som.musica = e.target.checked; store.set('pulppot-musica', Som.musica); Som.musica ? Som.iniciarMusica() : Som.pararMusica() };
+  $('oIdioma').onclick = e => { const b = e.target.closest('button'); if (b && b.dataset.lang !== LANG) { trocarIdioma(b.dataset.lang); abrirAjustes() } };
+  $('mTut').onclick = tutorial; $('mFechar').onclick = fechar;
+}
+
+/* ---------- tutorial animado: mini-pote com dedo, fusão e meta (só "Entendi" fecha) ---------- */
+let tutTk = 0;
+function tutorial() {
+  const tk = ++tutTk, T = tx();
+  abrir(`<canvas id="tutC" width="480" height="560" aria-hidden="true"></canvas><p class="tut-txt" id="tutT" aria-live="polite"></p>
+    <div class="row"><button class="btn" id="tutDe">${T.replay}</button><button class="btn primary" id="tutOk">${T.gotIt}</button></div>`, true);
+  $('modal').classList.add('tut');
+  $('tutOk').onclick = () => { store.set('pulppot-tutorial', true); tutTk++; fechar() };
+  $('tutDe').onclick = tutorial;
+  const c = $('tutC').getContext('2d'), ave = new Image(), t0 = performance.now(), FASE = 3000; let fase = -1;
+  ave.src = 'arara-azul.webp';
+  const anima = t => {
+    if (tk !== tutTk || !$('tutC')) return;
+    const e = Math.max(0, t - t0) % (FASE * 5), f = Math.floor(e / FASE), u = (e % FASE) / FASE;
+    if (f !== fase) { fase = f; $('tutT').textContent = tx().tut[f] }
+    cenaTutorial(c, f, u, ave); requestAnimationFrame(anima);
+  };
+  requestAnimationFrame(anima);
+}
+const caixa = (c, x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath() };
+const arvoreC = (c, x, y, s, viva) => { const k = s / 16; c.fillStyle = viva ? '#8D6E63' : '#D7CCC8'; c.fillRect(x + 7 * k, y + 10 * k, 2 * k, 5 * k); c.fillStyle = viva ? '#5CA84A' : '#E5DED3'; c.beginPath(); c.arc(x + 8 * k, y + 7 * k, 6 * k, 0, 7); c.fill() };
+const dedo = (c, x, y, aperta) => { c.save(); c.globalAlpha = aperta ? .95 : .55; c.fillStyle = 'rgba(255,255,255,.75)'; c.strokeStyle = '#3B2C28'; c.lineWidth = 2.5; c.beginPath(); c.arc(x, y, aperta ? 11 : 14, 0, 7); c.fill(); c.stroke(); c.restore() };
+function cenaTutorial(c, f, u, ave) { // 240x280 lógicos; fases: mirar e soltar, fusão, meta, linha, pomar
+  const lim = v => Math.max(0, Math.min(1, v)), suave = v => v * v * (3 - 2 * v), BOCA_T = 84, CHAO = 268, r2 = 20, r3 = 25;
+  c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 240, 280);
+  // faixa da meta: acende quando o caju nasce
+  const acesa = f > 2 || (f === 2 && u > .3);
+  c.fillStyle = acesa ? '#E7F5E2' : '#FFFFFF'; caixa(c, 16, 4, 208, 46, 14); c.fill(); c.strokeStyle = '#ECE3D6'; c.lineWidth = 1.5; c.stroke();
+  Desenho.fruta(c, 3, 38, 27, 13);
+  c.fillStyle = acesa ? '#2F7A3A' : '#4A3A35'; c.font = '800 12px Nunito, sans-serif'; c.textBaseline = 'middle'; c.fillText(tx().goal({tipo: 'fruta', k: 3}, nomes()), 58, 18, 160);
+  for (let i = 0; i < 10; i++) arvoreC(c, 58 + i * 14.5, 27, 13, f === 4 ? i < Math.ceil(u * 13) : acesa && i === 0);
+  // pote e linha (pisca vermelha na fase 3)
+  const g = c.createLinearGradient(0, 60, 0, 272); g.addColorStop(0, '#FFF9EE'); g.addColorStop(1, '#FCEFD8');
+  c.fillStyle = g; caixa(c, 16, 60, 208, 212, 18); c.fill(); c.strokeStyle = '#E8D9C2'; c.lineWidth = 3; c.stroke();
+  c.setLineDash([6, 6]); c.lineWidth = 2; c.strokeStyle = f === 3 && u > .55 ? `rgba(224,82,92,${.4 + .5 * Math.abs(Math.sin(u * 25))})` : 'rgba(154,135,128,.4)';
+  c.beginPath(); c.moveTo(24, 98); c.lineTo(216, 98); c.stroke(); c.setLineDash([]);
+  if (f === 0) { // arrasta para mirar, solta e a fruta cai
+    const x = u < .55 ? 100 + 50 * Math.sin(u / .55 * Math.PI * 2) : 100, p = lim((u - .55) / .3);
+    Desenho.fruta(c, 2, x, BOCA_T + (CHAO - r2 - BOCA_T) * p * p, r2);
+    if (u < .7) dedo(c, x, 180, u > .5);
+  } else if (f === 1) { // a segunda acerola encosta na primeira e as duas viram um caju
+    const bx = 100 + 40 * suave(lim(u / .4)), p = lim((u - .45) / .25), q = lim((u - .75) / .1);
+    if (u < .85) { Desenho.fruta(c, 2, 100 + 20 * q, CHAO - r2, r2); Desenho.fruta(c, 2, bx - 20 * q, BOCA_T + (CHAO - r2 - BOCA_T) * p * p, r2) }
+    else Desenho.fruta(c, 3, 120, CHAO - r3, r3, 0, 1 + .25 * Math.sin(lim((u - .85) / .15) * Math.PI));
+    if (u < .55) dedo(c, bx, 180, u > .4);
+  } else if (f === 2) { // a meta acende
+    Desenho.fruta(c, 3, 120, CHAO - r3, r3);
+    if (acesa) { c.strokeStyle = `rgba(242,183,5,${.8 * (1 - lim((u - .3) / .5))})`; c.lineWidth = 4; caixa(c, 13, 1, 214, 52, 16); c.stroke() }
+  } else if (f === 3) { // o pote enche até passar da linha
+    const pilha = [[3, 120, 243], [4, 50, 238], [5, 182, 232], [1, 92, 212], [2, 138, 198], [4, 64, 172], [0, 108, 168], [3, 160, 158], [2, 110, 132], [2, 128, 96]];
+    pilha.slice(0, Math.ceil(u * 1.8 * pilha.length)).forEach(([k, x, y]) => Desenho.fruta(c, k, x, y, [12, 15, 20, 25, 30, 36][k]));
+  } else { // pomar completo: as araras chegam
+    arvoreC(c, 50, 130, 140, true);
+    Desenho.fruta(c, 2, 92, 190, 9); Desenho.fruta(c, 6, 150, 178, 10); Desenho.fruta(c, 4, 122, 214, 9);
+    if (ave.complete && ave.naturalWidth) { c.globalAlpha = lim((u - .45) / .2); c.drawImage(ave, 112, 88, 68, 68); c.globalAlpha = 1 }
+  }
 }
 
 /* ---------- salvar e retomar ---------- */
@@ -269,7 +398,9 @@ const posX = e => (e.clientX - cv.getBoundingClientRect().left) / esc;
 cv.addEventListener('pointerdown', e => { mira = posX(e) });
 cv.addEventListener('pointermove', e => { mira = posX(e) });
 cv.addEventListener('pointerup', e => { mira = posX(e); soltar() });
-$('idioma').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.dataset.lang === LANG) return; LANG = b.dataset.lang; store.set('pulppot-lang', LANG); aplicarIdioma() });
+function trocarIdioma(l) { LANG = l; store.set('pulppot-lang', LANG); aplicarIdioma() }
+$('idioma').addEventListener('click', e => { const b = e.target.closest('button'); if (b && b.dataset.lang !== LANG) trocarIdioma(b.dataset.lang) });
+$('bPomar').onclick = abrirPomar; $('bAjustes').onclick = abrirAjustes;
 $('overlay').addEventListener('click', e => { if (e.target.id === 'overlay' && !$('overlay').dataset.fixo) fechar() });
 addEventListener('pointerup', () => Som.iniciarMusica()); // o iPhone só libera áudio depois de um toque
 document.addEventListener('visibilitychange', () => { if (document.hidden) salvarAgora(); Som.pausar(document.hidden) });
@@ -279,6 +410,7 @@ setInterval(() => { if (!acabou) salvarAgora() }, 5000);
 ajusta(); new ResizeObserver(ajusta).observe($('palco'));
 if (!retomar()) novaPartida();
 aplicarIdioma(); requestAnimationFrame(quadro);
+if (!store.get('pulppot-tutorial', false)) tutorial(); // primeira vez: tutorial antes da primeira queda
 </script>
 </body>
 </html>
