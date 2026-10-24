@@ -65,6 +65,12 @@ test('partida salva estragada ou de outra versão é ignorada', () => {
   assert.equal(R.restaura(JSON.stringify({ ...boa, frutas: 'x' })), null);
 });
 
+test('recorde e árvores salvos estragados voltam a zero', () => {
+  assert.equal(R.contagem(5), 5);
+  assert.equal(R.contagem(0), 0);
+  for (const v of [-3, 1.5, '7', null, undefined, { a: 1 }, NaN, Infinity, true]) assert.equal(R.contagem(v), 0, String(v));
+});
+
 test('transbordou: só fruta velha, parada e acima da linha', () => {
   const base = { y: 80, r: 15, vel: 0.1, idade: 2000 };
   assert.equal(R.transbordou([base], 86), true);

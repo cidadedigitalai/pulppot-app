@@ -31,9 +31,11 @@ const Regras = (() => {
     return { v: 1, frutas: p.frutas.map(({ k, x, y }) => ({ k, x, y })), pontos: p.pontos, maior: p.maior, atual: p.atual, prox: p.prox, metaFeita: p.metaFeita };
   }
 
+  const contagem = v => inteiro(v, 0, Infinity) ? v : 0; // recorde e árvores salvos: lixo vira zero
+
   // pote transbordou: alguma fruta que já caiu há um tempo, está parada e passou da linha
   const transbordou = (frutas, linha) => frutas.some(f => f.idade > 1200 && f.y - f.r < linha && f.vel < 0.6);
 
-  return { FRUTAS, PONTOS, pontosFusao, sorteiaFruta, metaPara, metaCumprida, serializa, restaura, transbordou };
+  return { FRUTAS, PONTOS, pontosFusao, sorteiaFruta, metaPara, metaCumprida, serializa, restaura, contagem, transbordou };
 })();
 if (typeof module !== 'undefined') module.exports = Regras;
