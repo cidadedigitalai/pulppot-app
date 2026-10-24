@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F7F2E7">
+<title>Pulp Pot</title>
+<style>
+@font-face{font-family:"Baloo 2";src:url(fontes/Baloo2.woff2) format("woff2");font-weight:400 800;font-display:swap}
+@font-face{font-family:"Nunito";src:url(fontes/Nunito.woff2) format("woff2");font-weight:200 1000;font-display:swap}
+:root{
+  --bg:#F7F2E7; --card:#FFFFFF; --ink:#4A3A35; --muted:#9A8780; --line:#ECE3D6;
+  --dark:#3B2C28; --sun:#F2B705; --bad:#E0525C; --ok:#2F7A3A;
+  --f-display:"Baloo 2","Nunito",system-ui,sans-serif;
+  --f-body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{height:100%;overflow:hidden;overscroll-behavior:none}
+body{margin:0;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none;display:flex;flex-direction:column;
+  background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-bottom,0px));
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;color:inherit}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+
+/* Topo: nome · EN|PT · pomar · ajustes */
+.topo{width:100%;max-width:520px;margin:0 auto;flex-shrink:0;display:flex;align-items:center;gap:8px}
+.topo h1{font:800 26px/1 var(--f-display);margin:0 auto 0 0;color:var(--dark);white-space:nowrap}
+.seg{display:flex;background:var(--card);border-radius:999px;padding:4px;gap:2px;box-shadow:0 2px 10px rgba(74,58,53,.10)}
+.seg button{border:0;background:transparent;font:800 12px var(--f-body);letter-spacing:.04em;padding:7px 10px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--dark);color:#FFF6E8}
+.icon{width:40px;height:40px;flex:0 0 auto;border-radius:50%;border:0;background:var(--card);box-shadow:0 2px 8px rgba(74,58,53,.10);display:grid;place-items:center;cursor:pointer}
+.icon svg{width:19px;height:19px;stroke:var(--ink);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Painel: próxima fruta · meta com as 10 árvores · placar */
+.painel{width:100%;max-width:520px;margin:10px auto 0;flex-shrink:0;display:flex;gap:8px;align-items:stretch}
+.painel>div{background:var(--card);border-radius:16px;box-shadow:0 2px 8px rgba(74,58,53,.08)}
+.rot{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.prox{padding:4px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.prox canvas{width:36px;height:36px;display:block}
+.meta{flex:1;min-width:0;padding:6px 10px;display:flex;align-items:center;gap:8px;transition:background .3s}
+.meta canvas{width:34px;height:34px;flex:0 0 auto}
+.meta .txt{min-width:0;display:flex;flex-direction:column;gap:4px}
+#metaTxt{font-weight:800;font-size:13.5px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta.feita{background:#E7F5E2}
+.meta.feita #metaTxt{color:var(--ok)}
+.arvores{display:flex;gap:2px}
+.arvores svg{width:12px;height:12px;display:block}
+.placar{min-width:64px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.placar b{font:800 24px/1 var(--f-display);color:var(--dark);font-variant-numeric:tabular-nums}
+
+/* Pote: ocupa o resto da tela */
+.palco{flex:1 1 0;min-height:0;width:100%;display:grid;place-items:center;margin-top:10px}
+#pote{display:block;touch-action:none;border-radius:22px;background:linear-gradient(#FFF9EE,#FCEFD8);box-shadow:inset 0 0 0 3px #E8D9C2,0 10px 30px rgba(74,58,53,.1)}
+.aviso{position:fixed;left:50%;top:30%;transform:translateX(-50%);background:var(--dark);color:#FFF6E8;font:800 17px var(--f-display);padding:10px 20px;border-radius:999px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:10}
+.aviso.mostra{opacity:1}
+
+/* Modais */
+.overlay{position:fixed;inset:0;background:rgba(59,44,40,.4);display:grid;place-items:center;z-index:20;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal{background:var(--card);border-radius:26px;max-width:400px;width:100%;padding:24px;display:flex;flex-direction:column;gap:10px;max-height:100%;overflow:auto;box-shadow:0 20px 50px rgba(59,44,40,.25);animation:sobe .3s ease-out}
+@keyframes sobe{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.modal h3{font:800 26px/1.1 var(--f-display);margin:0;color:var(--dark)}
+.modal p{margin:0}
+.btn{border:0;background:#F1EADF;font:800 15px var(--f-body);padding:12px 20px;border-radius:999px;cursor:pointer}
+.btn.primary{background:var(--dark);color:#FFF6E8}
+.fim{text-align:center;align-items:center}
+.fim .grande{font:800 38px/1 var(--f-display);color:var(--dark);font-variant-numeric:tabular-nums}
+.fim .linha{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700}
+.fim canvas{width:44px;height:44px}
+.fim .ok{color:var(--ok);font-weight:800}
+.fim .btn{margin-top:6px;padding:14px 30px;font-size:16px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="topo">
+  <h1>Pulp Pot</h1>
+  <div class="seg" id="idioma" role="group" aria-label="Language / Idioma"><button data-lang="en">EN</button><button data-lang="pt">PT</button></div>
+  <button class="icon" id="bPomar" data-ta="orchard"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="M12 15v6M9 21h6"/></svg></button>
+  <button class="icon" id="bAjustes" data-ta="settings"><svg viewBox="0 0 24 24"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg></button>
+</header>
+<div class="painel">
+  <div class="prox"><span class="rot" data-t="next">Next</span><canvas id="prox" width="72" height="72"></canvas></div>
+  <div class="meta" id="meta"><canvas id="metaFruta" width="68" height="68"></canvas><div class="txt"><span id="metaTxt"></span><div class="arvores" id="arvores"></div></div></div>
+  <div class="placar"><b id="pts">0</b><span class="rot"><span data-t="best">Best</span> <span id="rec">0</span></span></div>
+</div>
+<main class="palco" id="palco"><canvas id="pote"></canvas></main>
+<div class="aviso" id="aviso" role="status"></div>
+<div class="overlay" id="overlay" hidden><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+
+<script src="matter.min.js"></script>
+<script src="regras.js"></script>
+<script src="textos.js"></script>
+<script src="desenho.js"></script>
+<script src="som.js"></script>
+<script>
+const {Engine, Bodies, Body, Composite, Events} = Matter;
+const $ = id => document.getElementById(id);
+const store = {get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch (e) { return d } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} }};
+const F = Regras.FRUTAS, W = 400, LINHA = 86, BOCA = 42, PASSO = 1000 / 120, ESPERA = 400;
+
+/* ---------- idioma ---------- */
+let LANG = (() => { const v = store.get('pulppot-lang', null); return v === 'pt' || v === 'en' ? v : /^pt/i.test(navigator.language || '') ? 'pt' : 'en' })();
+const tx = () => Textos.TXT[LANG], nomes = () => Textos.NOMES[LANG];
+function aplicarIdioma() {
+  document.documentElement.lang = LANG === 'pt' ? 'pt-BR' : 'en';
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = tx()[el.dataset.t]);
+  document.querySelectorAll('[data-ta]').forEach(el => { el.setAttribute('aria-label', tx()[el.dataset.ta]); el.title = tx()[el.dataset.ta] });
+  document.querySelectorAll('#idioma button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === LANG));
+  desenhaFaixa();
+}
+
+/* ---------- vibração (só no app; no navegador não faz nada) ---------- */
+function tremer(tipo) {
+  const h = window.Capacitor?.Plugins?.Haptics; if (!h) return;
+  (tipo === 'leve' || tipo === 'forte' ? h.impact({style: tipo === 'leve' ? 'LIGHT' : 'MEDIUM'}) : h.notification({type: tipo === 'erro' ? 'ERROR' : 'SUCCESS'})).catch(() => {});
+}
+
+/* ---------- estado ---------- */
+const cv = $('pote'), ctx = cv.getContext('2d');
+let H = 600, esc = 1, dpr = 1;
+let engine, chao, fila = [], fusoes = [], pts = 0, maior = 0, atual = 0, prox = 0, meta, metaFeita = false, acabou = false;
+let tJogo = 0, acum = 0, proximaQueda = 0, tempoTopo = 0, mira = W / 2, gotas = [], pops = new Map();
+let rec = store.get('pulppot-recorde', 0), arvores = store.get('pulppot-arvores', 0), album = store.get('pulppot-album', []);
+if (!Array.isArray(album)) album = [];
+Som.efeitos = store.get('pulppot-som', true); Som.musica = store.get('pulppot-musica', true);
+
+/* ---------- pote e física ---------- */
+function ajusta() { // o pote se ajusta ao espaço livre; o chão da física vai junto
+  const r = $('palco').getBoundingClientRect(); dpr = devicePixelRatio || 1;
+  esc = Math.min(r.width / W, r.height / 480, 1.3); // ponytail: abaixo de 480 de altura o pote estreita em vez de achatar
+  const antes = H; H = Math.min(600, Math.floor(r.height / esc));
+  cv.style.width = W * esc + 'px'; cv.style.height = H * esc + 'px'; cv.width = Math.round(W * esc * dpr); cv.height = Math.round(H * esc * dpr);
+  if (!engine) return;
+  Body.setPosition(chao, {x: W / 2, y: H + 30});
+  if (H < antes) for (const b of frutas()) Body.setPosition(b, {x: b.position.x, y: b.position.y - (antes - H)}); // pote encolheu: a pilha sobe inteira, sem amassar umas nas outras
+}
+function mundo() {
+  engine = Engine.create(); engine.gravity.y = 1.1; engine.positionIterations = 10; engine.velocityIterations = 8; // mais iterações = pilha parada, sem tremer
+  const o = {isStatic: true, friction: .3};
+  chao = Bodies.rectangle(W / 2, H + 30, W * 2, 60, o);
+  Composite.add(engine.world, [chao, Bodies.rectangle(-30, 0, 60, 4000, o), Bodies.rectangle(W + 30, 0, 60, 4000, o)]);
+  Events.on(engine, 'collisionStart', e => { for (const p of e.pairs) { const a = p.bodyA, b = p.bodyB; // fusão única por par: as duas ficam marcadas até sumirem
+    if (a.k === undefined || a.k !== b.k || a.morta || b.morta) continue; a.morta = b.morta = true; fila.push([a, b]) } });
+  fila = []; tempoTopo = 0; acum = 0; gotas = []; pops = new Map();
+}
+const frutas = () => Composite.allBodies(engine.world).filter(b => b.k !== undefined && !b.morta);
+function criar(k, x, y) {
+  const b = Bodies.circle(x, y, F[k].r, {restitution: .12, friction: .25, frictionAir: .002, density: .0012});
+  b.k = k; b.nasceu = tJogo; Composite.add(engine.world, b); registrar(k); return b;
+}
+function registrar(k) { // maior fruta da partida, álbum e meta
+  if (k > maior) maior = k;
+  if (!album.includes(k)) { album.push(k); store.set('pulppot-album', album) }
+  checaMeta();
+}
+function checaMeta() {
+  if (metaFeita || !Regras.metaCumprida(meta, {maior, pontos: pts})) return;
+  metaFeita = true; arvores++; store.set('pulppot-arvores', arvores);
+  aviso(arvores >= 10 ? tx().orchardComplete : tx().treePlanted); Som.meta(); tremer('sucesso'); desenhaFaixa();
+}
+function processaFusoes() { // no mesmo tick da colisão: some o par, nasce a próxima fruta
+  if (!fila.length) return;
+  for (const [a, b] of fila) {
+    const k = a.k, x = (a.position.x + b.position.x) / 2, y = (a.position.y + b.position.y) / 2;
+    Composite.remove(engine.world, [a, b]); pts += Regras.pontosFusao(k); fusoes.push(k);
+    if (k < F.length - 1) pops.set(criar(k + 1, x, y), tJogo); // duas melancias só somem, com bônus
+    respingo(x, y, F[Math.min(k + 1, F.length - 1)].cor, 10 + k * 2); Som.fusao(k); tremer(k < 5 ? 'leve' : 'forte');
+  }
+  fila = []; checaMeta(); atualizaPlacar();
+}
+function guarda() { // ponytail: rede de segurança; fruta que escapar do pote volta para dentro parada
+  for (const b of frutas()) { const r = b.circleRadius, {x, y} = b.position;
+    if (x < 0 || x > W || y > H) { Body.setPosition(b, {x: Math.max(r, Math.min(W - r, x)), y: Math.min(y, H - r)}); Body.setVelocity(b, {x: 0, y: 0}) } }
+}
+function avancar(ms) { // passo fixo de 1/120 s; pausa com modal aberto e depois do fim
+  if (acabou || !$('overlay').hidden) return;
+  acum += ms; let simulado = 0;
+  while (acum >= PASSO) { Engine.update(engine, PASSO); tJogo += PASSO; simulado += PASSO; processaFusoes(); guarda(); acum -= PASSO }
+  if (!simulado) return;
+  const cheio = Regras.transbordou(frutas().map(b => ({y: b.position.y, r: b.circleRadius, vel: b.speed, idade: tJogo - b.nasceu})), LINHA);
+  tempoTopo = cheio ? tempoTopo + simulado : Math.max(0, tempoTopo - simulado * 2);
+  if (tempoTopo > 1500) fimDePartida();
+}
+
+/* ---------- partida ---------- */
+function novaPartida() {
+  try { localStorage.removeItem('pulppot-partida') } catch (e) {}
+  mundo(); pts = 0; maior = 0; fusoes = []; acabou = false; proximaQueda = 0;
+  atual = Regras.sorteiaFruta(Math.random); prox = Regras.sorteiaFruta(Math.random);
+  meta = Regras.metaPara(arvores); metaFeita = false;
+  fechar(); Desenho.miniatura($('prox'), prox); atualizaPlacar(); desenhaFaixa();
+}
+function soltar() {
+  if (acabou || !$('overlay').hidden || tJogo < proximaQueda) return;
+  const r = F[atual].r; criar(atual, Math.max(r, Math.min(W - r, mira)), BOCA); Som.queda();
+  atual = prox; prox = Regras.sorteiaFruta(Math.random); Desenho.miniatura($('prox'), prox); proximaQueda = tJogo + ESPERA;
+}
+function fimDePartida() {
+  acabou = true; try { localStorage.removeItem('pulppot-partida') } catch (e) {}
+  Som.fim(); tremer('erro');
+  const T = tx();
+  abrir(`<h3>${T.gameOver}</h3><p class="grande">${T.points(pts)}</p><p class="rot">${T.best} ${rec}</p>
+    <p class="linha"><canvas id="fimFruta" width="88" height="88"></canvas>${T.biggest(nomes()[maior])}</p>
+    <p class="${metaFeita ? 'ok' : ''}">${metaFeita ? T.goalDone : T.goalPending}: ${T.goal(meta, nomes())}</p>
+    <button class="btn primary" id="denovo">${T.playAgain}</button>`, true);
+  $('modal').classList.add('fim'); Desenho.miniatura($('fimFruta'), maior); $('denovo').onclick = novaPartida; $('denovo').focus();
+}
+
+/* ---------- salvar e retomar ---------- */
+function salvarAgora() {
+  if (acabou || !engine) return;
+  const p = {v: 1, frutas: frutas().map(b => ({k: b.k, x: +b.position.x.toFixed(2), y: +b.position.y.toFixed(2)})), pontos: pts, maior, atual, prox, metaFeita};
+  try { localStorage.setItem('pulppot-partida', Regras.serializa(p)) } catch (e) {}
+}
+function retomar() { // devolve true se havia partida salva íntegra
+  let p = null; try { p = Regras.restaura(localStorage.getItem('pulppot-partida')) } catch (e) {}
+  if (!p) return false;
+  mundo(); pts = p.pontos; maior = p.maior; atual = p.atual; prox = p.prox; metaFeita = p.metaFeita; fusoes = []; acabou = false; proximaQueda = 0;
+  meta = Regras.metaPara(metaFeita ? Math.max(0, arvores - 1) : arvores); // a meta feita continua marcada até a próxima partida
+  for (const f of p.frutas) { const r = F[f.k].r; const b = criar(f.k, Math.max(r, Math.min(W - r, f.x)), Math.min(H - r, f.y)); Body.setVelocity(b, {x: 0, y: 0}) }
+  Desenho.miniatura($('prox'), prox); atualizaPlacar(); desenhaFaixa();
+  return true;
+}
+
+/* ---------- tela ---------- */
+function atualizaPlacar() { $('pts').textContent = pts; if (pts > rec) { rec = pts; store.set('pulppot-recorde', rec) } $('rec').textContent = rec }
+function estrela(c) { const g = c.getContext('2d'), w = c.width; g.clearRect(0, 0, w, w); g.fillStyle = '#F2B705'; g.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, d = i % 2 ? w * .2 : w * .44; g.lineTo(w / 2 + Math.cos(a) * d, w / 2 + Math.sin(a) * d) } g.fill() }
+function desenhaFaixa() {
+  if (!meta) return;
+  meta.tipo === 'fruta' ? Desenho.miniatura($('metaFruta'), meta.k) : estrela($('metaFruta'));
+  $('metaTxt').textContent = tx().goal(meta, nomes());
+  $('meta').classList.toggle('feita', metaFeita);
+  $('arvores').innerHTML = Array.from({length: 10}, (_, i) => Desenho.arvoreSVG(i < arvores)).join('');
+  $('arvores').setAttribute('aria-label', `${tx().orchard}: ${Math.min(arvores, 10)}/10`);
+}
+let avisoT;
+function aviso(t) { const el = $('aviso'); el.textContent = t; el.classList.add('mostra'); clearTimeout(avisoT); avisoT = setTimeout(() => el.classList.remove('mostra'), 1800) }
+function abrir(html, fixo = false) { $('modal').className = 'modal'; $('modal').innerHTML = html; $('overlay').dataset.fixo = fixo ? '1' : ''; $('overlay').hidden = false }
+function fechar() { $('overlay').hidden = true }
+function respingo(x, y, cor, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = 2 + Math.random() * 4; gotas.push({x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, cor, vida: 1, r: 2 + Math.random() * 3}) } }
+function desenha(t) {
+  ctx.setTransform(esc * dpr, 0, 0, esc * dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  // linha de perigo: pisca vermelha enquanto o pote está enchendo
+  ctx.setLineDash([8, 8]); ctx.strokeStyle = tempoTopo > 0 ? `rgba(224,82,92,${.4 + .5 * Math.abs(Math.sin(t / 120))})` : 'rgba(154,135,128,.4)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(10, LINHA); ctx.lineTo(W - 10, LINHA); ctx.stroke(); ctx.setLineDash([]);
+  if (!acabou) { // fruta na mão + guia
+    const r = F[atual].r, x = Math.max(r, Math.min(W - r, mira));
+    ctx.strokeStyle = 'rgba(154,135,128,.25)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, BOCA + r); ctx.lineTo(x, H); ctx.stroke();
+    ctx.globalAlpha = tJogo < proximaQueda ? .45 : 1; Desenho.fruta(ctx, atual, x, BOCA, r); ctx.globalAlpha = 1;
+  }
+  for (const b of frutas()) { // a fruta que acabou de nascer "estoura" para o tamanho certo
+    const p = pops.get(b); let s = 1;
+    if (p !== undefined) { const u = (tJogo - p) / 180; if (u >= 1) pops.delete(b); else s = .7 + .3 * Math.sin(u * Math.PI / 2) + .12 * Math.sin(u * Math.PI) }
+    Desenho.fruta(ctx, b.k, b.position.x, b.position.y, b.circleRadius, b.angle, s);
+  }
+  for (const g of gotas) { g.x += g.vx; g.y += g.vy; g.vy += .25; g.vida -= .025; ctx.globalAlpha = Math.max(0, g.vida); ctx.fillStyle = g.cor; ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, 7); ctx.fill() }
+  ctx.globalAlpha = 1; gotas = gotas.filter(g => g.vida > 0);
+}
+let ultimo = performance.now();
+function quadro(t) { avancar(Math.min(50, t - ultimo)); ultimo = t; desenha(t); requestAnimationFrame(quadro) }
+
+/* ---------- eventos ---------- */
+const posX = e => (e.clientX - cv.getBoundingClientRect().left) / esc;
+cv.addEventListener('pointerdown', e => { mira = posX(e) });
+cv.addEventListener('pointermove', e => { mira = posX(e) });
+cv.addEventListener('pointerup', e => { mira = posX(e); soltar() });
+$('idioma').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.dataset.lang === LANG) return; LANG = b.dataset.lang; store.set('pulppot-lang', LANG); aplicarIdioma() });
+$('overlay').addEventListener('click', e => { if (e.target.id === 'overlay' && !$('overlay').dataset.fixo) fechar() });
+addEventListener('pointerup', () => Som.iniciarMusica()); // o iPhone só libera áudio depois de um toque
+document.addEventListener('visibilitychange', () => { if (document.hidden) salvarAgora(); Som.pausar(document.hidden) });
+addEventListener('pagehide', salvarAgora);
+setInterval(() => { if (!acabou) salvarAgora() }, 5000);
+
+ajusta(); new ResizeObserver(ajusta).observe($('palco'));
+if (!retomar()) novaPartida();
+aplicarIdioma(); requestAnimationFrame(quadro);
+</script>
+</body>
+</html>
